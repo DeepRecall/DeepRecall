@@ -16,9 +16,9 @@
             "name": "Python Debugger: RAG task",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "program": "src/deeprecall/rag/embed/task.py",
             "console": "integratedTerminal",
-            "args": "~/DeepRecall/DeepRecall test"
+            "args": "~/DeepRecall/DeepRecall test deepinfra"
         }
     ]
 }
