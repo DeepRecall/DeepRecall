@@ -18,7 +18,7 @@
             "request": "launch",
             "program": "src/deeprecall/rag/embed/task.py",
             "console": "integratedTerminal",
-            "args": "~/DeepRecall/DeepRecall test deepinfra"
+            "args": "~/DeepRecall/DeepRecall/resources thesis deepinfra"
         }
     ]
 }

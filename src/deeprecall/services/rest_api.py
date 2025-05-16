@@ -1,13 +1,13 @@
 from fastapi import FastAPI
 from deeprecall.services.celery_app import celery_app
-from deeprecall.rag.embed.task import populate_rag
+from deeprecall.rag.embed.task import create_rag
 
 app = FastAPI()
 
 
 @app.post("/populate_rag")
 async def start_processing(data: str):
-    task = populate_rag.delay()
+    task = create_rag.delay()
     return {"task_id": task.id}
 
 

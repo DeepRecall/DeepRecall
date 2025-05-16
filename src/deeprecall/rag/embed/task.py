@@ -3,10 +3,11 @@ import logging
 from dotenv import load_dotenv
 from deeprecall.services.celery_app import celery_app
 from tika import parser
-from langchain_milvus import Milvus
+from deeprecall.services.providers.vectorstore import get_vectorstore
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents.base import Document
 from langchain_community.embeddings import *
+from deeprecall.services.providers.embeding import create_embedding
 
 # Configure logging
 logging.basicConfig(
@@ -20,180 +21,21 @@ load_dotenv()
 # Configuration from environment variables
 TIKA_SERVER_URL = os.getenv("TIKA_SERVER_URL")
 MILVUS_URL = os.getenv("MILVUS_URL")
-EMBEDDING_ID = os.getenv("EMBEDDING_ID")
-EMBEDDING_KEY = os.getenv("EMBEDDING_KEY")
-EMBEDDING_URL = os.getenv("EMBEDDING_URL")
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
-EMBEDDING_CONTEXT_SIZE = int(os.getenv("EMBEDDING_CONTEXT_SIZE", "2048"))
-
-EMBEDDING_PROVIDERS = {
-    "aleph_alpha_asymmetric": lambda: AlephAlphaAsymmetricSemanticEmbedding(
-        model=EMBEDDING_MODEL,
-        aleph_alpha_api_key=EMBEDDING_KEY,
-        host=EMBEDDING_URL or "https://api.aleph-alpha.com",
-    ),
-    "aleph_alpha_symmetric": lambda: AlephAlphaSymmetricSemanticEmbedding(
-        model=EMBEDDING_MODEL,
-        aleph_alpha_api_key=EMBEDDING_KEY,
-        host=EMBEDDING_URL or "https://api.aleph-alpha.com",
-    ),
-    "anyscale": lambda: AnyscaleEmbeddings(
-        model_name=EMBEDDING_MODEL,
-        anyscale_api_key=EMBEDDING_KEY,
-        anyscale_api_base=EMBEDDING_URL or "https://api.endpoints.anyscale.com/v1",
-    ),
-    "azure_openai": lambda: AzureOpenAIEmbeddings(
-        azure_deployment=EMBEDDING_MODEL,
-        openai_api_key=EMBEDDING_KEY,
-        azure_endpoint=EMBEDDING_URL,
-    ),
-    "baichuan": lambda: BaichuanTextEmbeddings(
-        model_name=EMBEDDING_MODEL, baichuan_api_key=EMBEDDING_KEY
-    ),
-    "bookend": lambda: BookendEmbeddings(
-        model_id=EMBEDDING_MODEL, domain=EMBEDDING_ID, api_token=EMBEDDING_KEY
-    ),
-    "clarifai": lambda: ClarifaiEmbeddings(
-        model_id=EMBEDDING_MODEL,
-        token=EMBEDDING_KEY,
-        user_id=EMBEDDING_ID,
-        api_base=EMBEDDING_URL or "https://api.clarifai.com",
-    ),
-    "clova": lambda: ClovaEmbeddings(
-        model=EMBEDDING_MODEL, app_id=EMBEDDING_ID, clova_emb_api_key=EMBEDDING_KEY
-    ),
-    "clova_x": lambda: ClovaXEmbeddings(
-        model_name=EMBEDDING_MODEL,
-        ncp_clovastudio_api_key=EMBEDDING_KEY,
-        base_url=EMBEDDING_URL or "https://clovastudio.stream.ntruss.com",
-    ),
-    "cohere": lambda: CohereEmbeddings(
-        model=EMBEDDING_MODEL, cohere_api_key=EMBEDDING_KEY
-    ),
-    "dashscope": lambda: DashScopeEmbeddings(
-        model=EMBEDDING_MODEL, dashscope_api_key=EMBEDDING_KEY
-    ),
-    "databricks": lambda: DatabricksEmbeddings(target_uri=EMBEDDING_URL),
-    "deepinfra": lambda: DeepInfraEmbeddings(
-        model_id=EMBEDDING_MODEL, deepinfra_api_token=EMBEDDING_KEY
-    ),
-    "eden_ai": lambda: EdenAiEmbeddings(
-        model=EMBEDDING_MODEL, edenai_api_key=EMBEDDING_KEY, provider=EMBEDDING_ID
-    ),
-    "embaas": lambda: EmbaasEmbeddings(
-        model=EMBEDDING_MODEL,
-        embaas_api_key=EMBEDDING_KEY,
-        api_url=EMBEDDING_URL or "https://api.embaas.io/v1/embeddings/",
-    ),
-    "ernie": lambda: ErnieEmbeddings(
-        ernie_client_id=EMBEDDING_ID,
-        ernie_client_secret=EMBEDDING_KEY,
-        ernie_api_base=EMBEDDING_URL or "https://aip.baidubce.com",
-        model_name=EMBEDDING_MODEL,
-    ),
-    "gigachat": lambda: GigaChatEmbeddings(
-        base_url=EMBEDDING_URL,
-        model=EMBEDDING_MODEL,
-        user=EMBEDDING_ID,
-        password=EMBEDDING_KEY,
-    ),
-    "google_palm": lambda: GooglePalmEmbeddings(
-        google_api_key=EMBEDDING_KEY,
-        model_name=EMBEDDING_MODEL,
-    ),
-    "gradient": lambda: GradientEmbeddings(
-        model=EMBEDDING_MODEL,
-        gradient_workspace_id=EMBEDDING_ID,
-        gradient_access_token=EMBEDDING_KEY,
-        gradient_api_url=EMBEDDING_URL or "https://api.gradient.ai/api",
-    ),
-    "huggingface_hub": lambda: HuggingFaceHubEmbeddings(
-        model=EMBEDDING_MODEL,
-        huggingfacehub_api_token=EMBEDDING_KEY,
-    ),
-    "huggingface_inference_api": lambda: HuggingFaceInferenceAPIEmbeddings(
-        api_key=EMBEDDING_KEY,
-        model_name=EMBEDDING_MODEL,
-    ),
-    "hunyuan": lambda: HunyuanEmbeddings(
-        hunyuan_secret_id=EMBEDDING_ID,
-        hunyuan_secret_key=EMBEDDING_KEY,
-    ),
-    "javelin_ai_gateway": lambda: JavelinAIGatewayEmbeddings(
-        gateway_uri=EMBEDDING_URL, route=EMBEDDING_MODEL, javelin_api_key=EMBEDDING_KEY
-    ),
-    "jina": lambda: JinaEmbeddings(
-        model_name=EMBEDDING_MODEL, jina_api_key=EMBEDDING_KEY
-    ),
-    "llm_rails": lambda: LLMRailsEmbeddings(
-        model=EMBEDDING_MODEL, api_key=EMBEDDING_KEY
-    ),
-    "minimax": lambda: MiniMaxEmbeddings(
-        model=EMBEDDING_MODEL, group_id=EMBEDDING_ID, api_key=EMBEDDING_KEY
-    ),
-    "mosaicml_instructor": lambda: MosaicMLInstructorEmbeddings(
-        model=EMBEDDING_MODEL,
-        mosaicml_api_token=EMBEDDING_KEY,
-    ),
-    "nlpcloud": lambda: NLPCloudEmbeddings(
-        model_name=EMBEDDING_MODEL, gpu=True, nlpcloud_api_key=EMBEDDING_KEY
-    ),
-    "octoai": lambda: OctoAIEmbeddings(
-        model=EMBEDDING_MODEL,
-        octoai_api_token=EMBEDDING_KEY,
-        endpoint_url=EMBEDDING_URL or "https://text.octoai.run/v1/",
-    ),
-    "openai": lambda: OpenAIEmbeddings(
-        model=EMBEDDING_MODEL,
-        openai_api_key=EMBEDDING_KEY,
-        openai_api_base=EMBEDDING_URL or "https://api.openai.com/v1",
-    ),
-    "ovhcloud": lambda: OVHCloudEmbeddings(
-        access_token=EMBEDDING_KEY, model_name=EMBEDDING_MODEL
-    ),
-    "premai": lambda: PremAIEmbeddings(
-        project_id=int(EMBEDDING_ID),
-        premai_api_key=EMBEDDING_KEY,
-        model=EMBEDDING_MODEL,
-    ),
-    "qianfan": lambda: QianfanEmbeddingsEndpoint(
-        qianfan_ak=EMBEDDING_ID,
-        qianfan_sk=EMBEDDING_KEY,
-        model=EMBEDDING_MODEL,
-    ),
-    "solar": lambda: SolarEmbeddings(
-        endpoint_url=EMBEDDING_URL or "https://api.upstage.ai/v1/solar/embeddings",
-        model=EMBEDDING_MODEL,
-        solar_api_key=EMBEDDING_KEY,
-    ),
-    "textembed": lambda: TextEmbedEmbeddings(
-        model=EMBEDDING_MODEL, api_url=EMBEDDING_URL, api_key=EMBEDDING_KEY
-    ),
-    "volcengine": lambda: VolcanoEmbeddings(
-        volcano_ak=EMBEDDING_ID,
-        volcano_sk=EMBEDDING_KEY,
-        model=EMBEDDING_MODEL,
-        host=EMBEDDING_URL or "maas-api.ml-platform-cn-beijing.volces.com",
-    ),
-    "voyageai": lambda: VoyageEmbeddings(
-        model=EMBEDDING_MODEL,
-        voyage_api_base=EMBEDDING_URL or "https://api.voyageai.com/v1/embeddings",
-        voyage_api_key=EMBEDDING_KEY,
-    ),
-    "xinference": lambda: XinferenceEmbeddings(
-        server_url=EMBEDDING_URL, model_uid=EMBEDDING_MODEL
-    ),
-    "yandex": lambda: YandexGPTEmbeddings(
-        iam_token=EMBEDDING_KEY,
-        model_uri=f"emb://{EMBEDDING_ID}/{EMBEDDING_MODEL}/latest",
-        folder_id=EMBEDDING_ID,
-    ),
-    "zhipuai": lambda: ZhipuAIEmbeddings(model=EMBEDDING_MODEL, api_key=EMBEDDING_KEY),
-}
 
 
 @celery_app.task(bind=True)
-def populate_rag(self, folder_path: str, collection_name: str, embedding_provider: str):
+def create_rag(
+    self,
+    folder_path: str,
+    collection_name: str,
+    embedding_provider: str,
+    vectorstore_provider: str,
+    embedding_model: str = None,
+    embedding_key: str = None,
+    embedding_url: str = None,
+    embedding_provider_id: str = None,
+    context_size: int = 8192,
+):
     """
     Process files in a folder and store embeddings in Milvus.
 
@@ -202,9 +44,14 @@ def populate_rag(self, folder_path: str, collection_name: str, embedding_provide
         folder_path: Path to directory containing files to process
         collection_name: Collection name for Milvus
         embedding_provider: Name of the embedding provider to use
+        embedding_model (str, optional): Specific model to use with the provider
+        embedding_key (str, optional): Authentication key for the provider
+        embedding_url (str, optional): Custom endpoint URL for the provider
+        embedding_provider_id (str, optional): Provider-specific identifier
+        context_size (int, optional): Context size for embedding generation. Defaults to 8192.
 
     Returns:
-        bool: True if processing completed successfully
+        bool: True if processing completed successfully, False otherwise
     """
     try:
         # Validate input
@@ -215,26 +62,26 @@ def populate_rag(self, folder_path: str, collection_name: str, embedding_provide
             return False
 
         # Dynamically create an instance of the specified embedding provider
-        embedding_provider = (
-            embedding_provider.lower().replace(" ", "_").replace("-", "_")
-        )
-        embed_engine = EMBEDDING_PROVIDERS.get(embedding_provider)
-        if embed_engine is None:
-            error_msg = f"Unsupported embedding provider: {embedding_provider}"
+        try:
+            embed_engine = create_embedding(
+                provider_name=embedding_provider,
+                model=embedding_model,
+                key=embedding_key,
+                url=embedding_url,
+                provider_id=embedding_provider_id,
+            )
+        except ValueError as e:
+            error_msg = str(e)
             logging.error(error_msg)
             self.update_state(state="FAILURE", meta={"error": error_msg})
             return False
-        embed_engine = embed_engine()
 
-        # Create Milvus vector store with dynamic collection name
-        vector_store = Milvus(
-            embedding_function=embed_engine,
+        # Create vector store with dynamic provider and collection name
+        vector_store = get_vectorstore(
+            provider_name=vectorstore_provider,
             collection_name=collection_name,
-            connection_args={
-                "uri": MILVUS_URL,
-            },
-            drop_old=False,
-            auto_id=True,
+            embedding_function=embed_engine,
+            init_collection=True,
         )
 
         # Process files
@@ -254,7 +101,9 @@ def populate_rag(self, folder_path: str, collection_name: str, embedding_provide
                         self.update_state(state="FAILURE", meta={"error": error_msg})
                         return False
 
-                    parsed = parser.from_file(file_path, serverEndpoint=TIKA_SERVER_URL)
+                    parsed = parser.from_file(
+                        file_path, serverEndpoint=TIKA_SERVER_URL, service="all"
+                    )
                     text = parsed.get("content", "").strip()
 
                     if not text:
@@ -263,7 +112,7 @@ def populate_rag(self, folder_path: str, collection_name: str, embedding_provide
 
                     # Split text into chunks
                     text_splitter = RecursiveCharacterTextSplitter(
-                        chunk_size=EMBEDDING_CONTEXT_SIZE, chunk_overlap=200
+                        chunk_size=context_size, chunk_overlap=200
                     )
                     chunks = text_splitter.split_text(text)
 
@@ -301,11 +150,29 @@ if __name__ == "__main__":
 
     if len(sys.argv) < 2:
         print(
-            "Usage: python task.py <folder_path> <collection_name> <embedding_provider>"
+            "Usage: python task.py <folder_path> <collection_name> <embedding_provider> <vectorstore_provider>"
         )
         sys.exit(1)
+
+    EMBEDDING_ID = os.getenv("EMBEDDING_ID")
+    EMBEDDING_KEY = os.getenv("EMBEDDING_KEY")
+    EMBEDDING_URL = os.getenv("EMBEDDING_URL")
+    EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
+    EMBEDDING_ID = os.getenv("EMBEDDING_ID")
+    EMBEDDING_CONTEXT_SIZE = int(os.getenv("EMBEDDING_CONTEXT_SIZE", "2048"))
+    VECTORSTORE_PROVIDER = os.getenv("VECTORSTORE_PROVIDER", "milvus")
 
     folder_path = sys.argv[1]
     collection_name = sys.argv[2] if len(sys.argv) > 2 else None
     embedding_provider = sys.argv[3] if len(sys.argv) > 3 else None
-    populate_rag(folder_path, collection_name, embedding_provider)
+    create_rag(
+        folder_path=folder_path,
+        collection_name=collection_name,
+        embedding_provider=embedding_provider,
+        vectorstore_provider=VECTORSTORE_PROVIDER,
+        embedding_key=EMBEDDING_KEY,
+        embedding_model=EMBEDDING_MODEL,
+        embedding_url=EMBEDDING_URL,
+        embedding_provider_id=EMBEDDING_ID,
+        context_size=EMBEDDING_CONTEXT_SIZE,
+    )
