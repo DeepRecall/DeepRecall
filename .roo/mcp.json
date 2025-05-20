@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "python-language-server": {
+      "command": "/home/yuwei/go/bin/mcp-language-server",
+      "args": [
+        "--workspace",
+        "/home/yuwei/DeepRecall/DeepRecall/",
+        "--lsp",
+        "pyright-langserver",
+        "--",
+        "--stdio"
+      ],
+      "disabled": false,
+      "alwaysAllow": [
+        "definition",
+        "diagnostics",
+        "edit_file",
+        "hover",
+        "references",
+        "rename_symbol"
+      ]
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 from dotenv import load_dotenv
 from deeprecall.services.celery_app import celery_app
 from tika import parser
@@ -85,6 +86,7 @@ def create_rag(
         )
 
         # Process files
+        coroutines = []
         for root, dirs, files in os.walk(folder_path):
             # Skip hidden directories
             dirs[:] = [d for d in dirs if not d.startswith(".")]
@@ -129,11 +131,21 @@ def create_rag(
                     ]
 
                     # Add to vector store
-                    vector_store.add_documents(documents)
+                    coroutines.append(vector_store.aadd_documents(documents))
 
                 except Exception as e:
                     logging.error(f"Error processing {file_path}: {str(e)}")
                     continue
+
+        # Run all async document additions concurrently
+        if coroutines:
+            try:
+                loop = asyncio.get_event_loop()
+                loop.run_until_complete(asyncio.gather(*coroutines))
+            except Exception as e:
+                logging.error(f"Error adding documents: {str(e)}")
+                self.update_state(state="FAILURE", meta={"error": str(e)})
+                return False
 
         return True
 
