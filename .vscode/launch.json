@@ -13,12 +13,20 @@
             "args": "${command:pickArgs}"
         },
         {
-            "name": "Python Debugger: RAG task",
+            "name": "RAG embed",
             "type": "debugpy",
             "request": "launch",
             "program": "src/deeprecall/rag/embed/task.py",
             "console": "integratedTerminal",
-            "args": "~/DeepRecall/DeepRecall/resources thesis deepinfra"
+            "args": "~/DeepRecall/DeepRecall/resources chroma thesis deepinfra"
+        },
+        {
+            "name": "RAG extract",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/deeprecall/rag/extract/task.py",
+            "console": "integratedTerminal",
+            "args": "chroma thesis deepinfra \"Define FLiBe\""
         }
     ]
 }

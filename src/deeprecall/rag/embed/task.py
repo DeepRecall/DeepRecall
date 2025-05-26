@@ -1,6 +1,5 @@
 import os
 import logging
-import asyncio
 from dotenv import load_dotenv
 from deeprecall.services.celery_app import celery_app
 from tika import parser
@@ -21,7 +20,6 @@ load_dotenv()
 
 # Configuration from environment variables
 TIKA_SERVER_URL = os.getenv("TIKA_SERVER_URL")
-MILVUS_URL = os.getenv("MILVUS_URL")
 
 
 @celery_app.task(bind=True)
@@ -86,7 +84,6 @@ def create_rag(
         )
 
         # Process files
-        coroutines = []
         for root, dirs, files in os.walk(folder_path):
             # Skip hidden directories
             dirs[:] = [d for d in dirs if not d.startswith(".")]
@@ -131,21 +128,11 @@ def create_rag(
                     ]
 
                     # Add to vector store
-                    coroutines.append(vector_store.aadd_documents(documents))
+                    vector_store.add_documents(documents)
 
                 except Exception as e:
                     logging.error(f"Error processing {file_path}: {str(e)}")
                     continue
-
-        # Run all async document additions concurrently
-        if coroutines:
-            try:
-                loop = asyncio.get_event_loop()
-                loop.run_until_complete(asyncio.gather(*coroutines))
-            except Exception as e:
-                logging.error(f"Error adding documents: {str(e)}")
-                self.update_state(state="FAILURE", meta={"error": str(e)})
-                return False
 
         return True
 
@@ -160,9 +147,9 @@ def create_rag(
 if __name__ == "__main__":
     import sys
 
-    if len(sys.argv) < 2:
+    if len(sys.argv) != 5:
         print(
-            "Usage: python task.py <folder_path> <collection_name> <embedding_provider> <vectorstore_provider>"
+            "Usage: python task.py <folder_path> <vectorstore_provider> <collection_name> <embedding_provider>"
         )
         sys.exit(1)
 
@@ -170,18 +157,18 @@ if __name__ == "__main__":
     EMBEDDING_KEY = os.getenv("EMBEDDING_KEY")
     EMBEDDING_URL = os.getenv("EMBEDDING_URL")
     EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
-    EMBEDDING_ID = os.getenv("EMBEDDING_ID")
     EMBEDDING_CONTEXT_SIZE = int(os.getenv("EMBEDDING_CONTEXT_SIZE", "2048"))
-    VECTORSTORE_PROVIDER = os.getenv("VECTORSTORE_PROVIDER", "milvus")
 
     folder_path = sys.argv[1]
-    collection_name = sys.argv[2] if len(sys.argv) > 2 else None
-    embedding_provider = sys.argv[3] if len(sys.argv) > 3 else None
+    vectorstore_provider = sys.argv[2]
+    collection_name = sys.argv[3]
+    embedding_provider = sys.argv[4]
+
     create_rag(
         folder_path=folder_path,
         collection_name=collection_name,
         embedding_provider=embedding_provider,
-        vectorstore_provider=VECTORSTORE_PROVIDER,
+        vectorstore_provider=vectorstore_provider,
         embedding_key=EMBEDDING_KEY,
         embedding_model=EMBEDDING_MODEL,
         embedding_url=EMBEDDING_URL,

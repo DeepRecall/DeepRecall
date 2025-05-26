@@ -61,7 +61,6 @@ def get_vectorstore(
             client = chromadb.HttpClient(
                 host=CHROMA_HOST,
                 port=CHROMA_PORT,
-                database=collection_name,
             )
 
             if init_collection:

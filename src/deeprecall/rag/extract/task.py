@@ -16,12 +16,10 @@ logging.basicConfig(
 load_dotenv()
 
 # Configuration from environment variables
-MILVUS_URL = os.getenv("MILVUS_URL")
 EMBEDDING_ID = os.getenv("EMBEDDING_ID")
 EMBEDDING_KEY = os.getenv("EMBEDDING_KEY")
 EMBEDDING_URL = os.getenv("EMBEDDING_URL")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
-EMBEDDING_CONTEXT_SIZE = int(os.getenv("EMBEDDING_CONTEXT_SIZE", "2048"))
 
 
 @celery_app.task(bind=True)
@@ -73,8 +71,6 @@ def extract_relevant_documents(
             self.update_state(state="FAILURE", meta={"error": error_msg})
             return {"success": False, "error": error_msg}
 
-        embed_engine = embed_engine()
-
         # Use vectorstore provider factory pattern like embed task
         vector_store = get_vectorstore(
             provider_name=vectorstore_provider,
@@ -109,3 +105,22 @@ def extract_relevant_documents(
         logging.error(error_msg, exc_info=True)
         self.update_state(state="FAILURE", meta={"error": str(e)})
         return {"success": False, "error": error_msg}
+
+
+# Example usage
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) != 5:
+        print(
+            "Usage: python task.py <vectorstore_provider> <collection_name> <embedding_provider> <query>"
+        )
+        sys.exit(1)
+
+    vectorstore_provider = sys.argv[1]
+    collection_name = sys.argv[2]
+    embedding_provider = sys.argv[3]
+    query = sys.argv[4]
+    extract_relevant_documents(
+        query, collection_name, embedding_provider, vectorstore_provider
+    )
