@@ -42,6 +42,7 @@ def get_vectorstore(
     ELASTICSEARCH_URL = os.getenv("ELASTICSEARCH_URL")
     ELASTICSEARCH_USR = os.getenv("ELASTICSEARCH_USR")
     ELASTICSEARCH_PASS = os.getenv("ELASTICSEARCH_PASS")
+    ELASTICSEARCH_CERT_PATH = os.getenv("ELASTICSEARCH_CERT_PATH")
     QDRANT_URL = os.getenv("QDRANT_URL")
     WEAVIATE_HOST = os.getenv("WEAVIATE_HOST")
     WEAVIATE_HTTP_PORT = os.getenv("WEAVIATE_HTTP_PORT")
@@ -79,15 +80,19 @@ def get_vectorstore(
             )
 
         elif provider == "elasticsearch":
-            # Create client
-            client = Elasticsearch(
-                hosts=[ELASTICSEARCH_URL],
-                basic_auth=(ELASTICSEARCH_USR, ELASTICSEARCH_PASS),
-            )
+            # Create client with authentication if credentials are provided
+            es_kwargs = {"hosts": [ELASTICSEARCH_URL]}
+            if ELASTICSEARCH_USR and ELASTICSEARCH_PASS:
+                es_kwargs["basic_auth"] = (ELASTICSEARCH_USR, ELASTICSEARCH_PASS)
+            if ELASTICSEARCH_CERT_PATH:
+                es_kwargs["ca_certs"] = ELASTICSEARCH_CERT_PATH
+
+            client = Elasticsearch(**es_kwargs)
 
             if init_collection:
                 # Check and delete index
                 if client.indices.exists(index=collection_name):
+                    print(f"Deleting existing index: {collection_name}")
                     client.indices.delete(index=collection_name)
 
             return ElasticsearchStore(

@@ -13,12 +13,12 @@
             "args": "${command:pickArgs}"
         },
         {
-            "name": "RAG embed",
+            "name": "preprocess",
             "type": "debugpy",
             "request": "launch",
-            "program": "src/deeprecall/rag/embed/task.py",
+            "program": "src/deeprecall/embed_rag/task.py",
             "console": "integratedTerminal",
-            "args": "~/DeepRecall/DeepRecall/resources chroma thesis deepinfra"
+            "args": "53039889-b7e6-4ae4-a18c-105cc060cd55 resources processed_data elasticsearch deepinfra"
         },
         {
             "name": "RAG extract",

@@ -175,3 +175,7 @@ cython_debug/
 
 # Docker volumes
 volumes/
+
+# processed data
+processed_data/
+tmp/

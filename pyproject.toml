@@ -6,30 +6,31 @@ authors = []
 license = {text = "MIT"}
 requires-python = ">=3.11, <3.14"
 dependencies = [
-    "transformers (>=4.51.3)",
-    "torch (>=2.6.0)",
-    "celery (>=5.5.1)",
-    "fastapi (>=0.115)",
-    "tika (>=3.1.0)",
-    "langchain (>=0.3.25)",
-    "langchain-community (>=0.3.23)",
-    "langchain-openai (>=0.3.16)",
-    "langchain-milvus (>=0.1.10)",
-    "langchain_chroma (>=0.2.3)",
-    "chromadb (>1)",
-    "langchain-elasticsearch (>=0.3.2)",
+    "transformers>=4.51.3",
+    "torch>=2.6.0",
+    "celery>=5.5.1",
+    "fastapi>=0.115",
+    "tika>=3.1.0",
+    "langchain>=0.3.25",
+    "langchain-community>=0.3.23",
+    "langchain-openai>=0.3.16",
+    "langchain-milvus>=0.1.10",
+    "langchain_chroma>=0.2.3",
+    "chromadb>1",
+    "langchain-elasticsearch>=0.3.2",
     # "langchain_postgres (>=0.0.14)",
-    "langchain-qdrant (>=0.2.0)",
+    "langchain-qdrant>=0.2.0",
     # "langchain-weaviate (>=0.0.4)"
-    "qdrant-client (>=1.14.2,<2.0.0)"
+    "qdrant-client>=1.14.2,<2.0.0"
 ]
 
-[tool.poetry]
-
-[tool.poetry.group.dev.dependencies]
-jupyterlab = "^4.4.0"
-black="^25.1.0"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.7.9,<0.8.0"]
+build-backend = "uv_build"
+
+[project.optional-dependencies]
+dev = [
+    "jupyterlab>=4.4.0",
+    "black>=25.1.0"
+]

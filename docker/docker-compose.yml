@@ -58,12 +58,6 @@ services:
     #   - "8000:8000"
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/chroma:/data
-    healthcheck:
-      # Adjust below to match your container port
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/v2/heartbeat" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
     networks:
       deeprecall:
         ipv4_address: 172.25.0.4

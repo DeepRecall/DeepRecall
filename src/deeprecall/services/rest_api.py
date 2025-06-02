@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from deeprecall.services.celery_app import celery_app
-from deeprecall.rag.embed.task import create_rag
+from deeprecall.rag.embed_rag.task import create_rag
 
 app = FastAPI()
 
