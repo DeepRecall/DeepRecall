@@ -136,61 +136,49 @@ def preprocess(
             for file_name in files:
                 file_path = os.path.join(root, file_name)
 
-                try:
-                    # Parse file with Tika
-                    if not TIKA_SERVER_URL:
-                        error_msg = "TIKA_SERVER_URL not configured"
-                        logging.error(error_msg)
-                        self.update_state(state="FAILURE", meta={"error": error_msg})
-                        return False
-
-                    parsed = parser.from_file(
-                        file_path, serverEndpoint=TIKA_SERVER_URL, service="all"
-                    )
-                    text = parsed.get("content", "").strip()
-
-                    if not text:
-                        logging.warning(f"No content extracted from {file_path}")
-                        continue
-
-                    # Split text into chunks
-                    text_splitter = RecursiveCharacterTextSplitter(
-                        chunk_size=context_size, chunk_overlap=200
-                    )
-                    chunks = text_splitter.split_text(text)
-
-                    # Save chunks to output folder and prepare documents
-                    for i, chunk in enumerate(chunks):
-                        chunk_filename = f"{file_name}_chunk_{i}.txt"
-                        chunk_path = doc_chunk_path / chunk_filename
-                        with open(chunk_path, "w") as chunk_file:
-                            chunk_file.write(chunk)
-
-                        chunk_uuid = str(
-                            uuid.uuid5(nil_namespace, chunk_path.as_posix())
-                        )
-
-                        doc = Document(
-                            id=chunk_uuid,
-                            page_content=chunk,
-                            metadata={
-                                "source": file_path,
-                                "file_name": file_name,
-                                "chunk_index": i,
-                            },
-                        )
-
-                    # Add document one by one with retry mechanism - will raise exception on failure
-                    retry_add_document(doc)
-                    return True
-
-                except Exception as e:
-                    # Log and propagate critical errors to Celery
-                    logging.error(
-                        f"Critical error in process_data: {str(e)}", exc_info=True
-                    )
-                    self.update_state(state="FAILURE", meta={"error": str(e)})
+                # Parse file with Tika
+                if not TIKA_SERVER_URL:
+                    error_msg = "TIKA_SERVER_URL not configured"
+                    logging.error(error_msg)
+                    self.update_state(state="FAILURE", meta={"error": error_msg})
                     return False
+
+                parsed = parser.from_file(
+                    file_path, serverEndpoint=TIKA_SERVER_URL, service="all"
+                )
+                text = parsed.get("content", "").strip()
+
+                if not text:
+                    logging.warning(f"No content extracted from {file_path}")
+                    continue
+
+                # Split text into chunks
+                text_splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=context_size, chunk_overlap=200
+                )
+                chunks = text_splitter.split_text(text)
+
+                # Save chunks to output folder and prepare documents
+                for i, chunk in enumerate(chunks):
+                    chunk_filename = f"{file_name}_chunk_{i}.txt"
+                    chunk_path = doc_chunk_path / chunk_filename
+                    with open(chunk_path, "w") as chunk_file:
+                        chunk_file.write(chunk)
+
+                    chunk_uuid = str(uuid.uuid5(nil_namespace, chunk_path.as_posix()))
+
+                    doc = Document(
+                        id=chunk_uuid,
+                        page_content=chunk,
+                        metadata={
+                            "source": file_path,
+                            "file_name": file_name,
+                            "chunk_index": i,
+                        },
+                    )
+
+                # Add document one by one with retry mechanism - will raise exception on failure
+                retry_add_document(doc)
 
     except Exception as e:
         # Log and propagate critical errors to Celery
