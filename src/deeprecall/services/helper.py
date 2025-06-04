@@ -2,7 +2,7 @@
 import pickle
 import logging
 
-logger = logging.getLogger("Delorean Helper")
+logger = logging.getLogger("DeepRecall Helper")
 
 
 class Helper:
