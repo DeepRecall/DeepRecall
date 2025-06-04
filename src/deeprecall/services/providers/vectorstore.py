@@ -92,7 +92,6 @@ def get_vectorstore(
             if init_collection:
                 # Check and delete index
                 if client.indices.exists(index=collection_name):
-                    print(f"Deleting existing index: {collection_name}")
                     client.indices.delete(index=collection_name)
 
             return ElasticsearchStore(
